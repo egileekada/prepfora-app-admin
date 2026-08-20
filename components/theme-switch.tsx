@@ -1,5 +1,4 @@
-import { FC, useEffect, useState } from "react";
-import { useTheme } from "next-themes";
+import { FC, useEffect, useState } from "react"; 
 import clsx from "clsx";
 
 import { SunFilledIcon, MoonFilledIcon } from "@/components/icons";
@@ -9,14 +8,7 @@ export interface ThemeSwitchProps {
 }
 
 export const ThemeSwitch: FC<ThemeSwitchProps> = ({ className }) => {
-  const [isMounted, setIsMounted] = useState(false);
-  const { setTheme, resolvedTheme } = useTheme();
-
-  const isLight = resolvedTheme === "light";
-
-  const handleToggle = () => {
-    setTheme(isLight ? "dark" : "light");
-  };
+  const [isMounted, setIsMounted] = useState(false); 
 
   useEffect(() => {
     setIsMounted(true);
@@ -27,16 +19,16 @@ export const ThemeSwitch: FC<ThemeSwitchProps> = ({ className }) => {
 
   return (
     <button
-      aria-label={`Switch to ${isLight ? "dark" : "light"} mode`}
+      aria-label={`Switch to mode`}
       className={clsx(
         "px-px transition-opacity hover:opacity-80 cursor-pointer",
         "inline-flex items-center justify-center",
         "w-auto h-auto bg-transparent rounded-lg text-muted",
         className,
       )}
-      onClick={handleToggle}
+      // onClick={handleToggle}
     >
-      {isLight ? <SunFilledIcon size={22} /> : <MoonFilledIcon size={22} />}
+      {/* {isLight ? <SunFilledIcon size={22} /> : <MoonFilledIcon size={22} />} */}
     </button>
   );
 };
