@@ -7,6 +7,7 @@ import Text from "./customText";
 import { formatNumber } from "@/config/numberFormat";
 import { dateFormat } from "@/config/dateFormat";
 import { Column, CustomTableProps } from "@/types/table";
+import CustomText from "./customText";
 
 function getNestedValue(obj: Record<string, unknown>, path: string): unknown {
     return path.split(".").reduce<unknown>((acc, key) => {
@@ -23,7 +24,7 @@ export default function CustomTable<T extends Record<string, any>>({
     page = 1,
     onPageChange,
     rowsPerPage = 10,
-    paginated = false,
+    paginated = true,
     emptyText = "No data available",
     onClick,
     className,
@@ -36,6 +37,8 @@ export default function CustomTable<T extends Record<string, any>>({
         : tableRows.length;
     const totalPages = paginated ? Math.ceil(itemTotal / rowsPerPage) : 1;
 
+    const hasNext = (rowsPerPage * page) > Number(total);
+
     const items = useMemo(() => {
         if (!paginated) return tableRows;
         const start = (page - 1) * rowsPerPage;
@@ -44,6 +47,9 @@ export default function CustomTable<T extends Record<string, any>>({
 
     const rangeStart = itemTotal === 0 ? 0 : (page - 1) * rowsPerPage + 1;
     const rangeEnd = Math.min(page * rowsPerPage, itemTotal);
+
+    console.log(total);
+    
 
     function renderCell(item: T, column: Column<T>): React.ReactNode {
         const value = column.id.includes(".")
@@ -80,25 +86,25 @@ export default function CustomTable<T extends Record<string, any>>({
                     className={cn("min-w-full border-collapse", tableClassName)}
                 >
                     <thead>
-                        <tr className="border-b border-grey-02 bg-white">
+                        <tr className="border-b border-grey-02 h-14 bg-primary-100 ">
                             {columns.map((column) => (
                                 <th
                                     key={column.id}
                                     scope="col"
-                                    className="px-4 py-4 text-left text-sm font-medium text-grey-03"
+                                    className="px-4 py-4 text-left text-sm uppercase font-medium text-grey-03"
                                 >
-                                    {column.name}
+                                    <CustomText type="title-md" >{column.name}</CustomText>
                                 </th>
                             ))}
                         </tr>
                     </thead>
                     <tbody>
-                        {items.length > 0 ? (
-                            items.map((row) => (
+                        {tableRows.length > 0 ? (
+                            tableRows.map((row) => (
                                 <tr
                                     key={String(row[rowKey])}
                                     className={cn(
-                                        "border-b border-grey-02 last:border-b-0",
+                                        " h-[72px] ",
                                         onClick && "cursor-pointer",
                                         rowClassName,
                                     )}
@@ -120,9 +126,9 @@ export default function CustomTable<T extends Record<string, any>>({
                                     colSpan={columns.length}
                                     className="px-4 py-16 text-center"
                                 >
-                                    <Text className="text-sm text-grey-03">
+                                    <CustomText type="body-lg" >
                                         {emptyText}
-                                    </Text>
+                                    </CustomText>
                                 </td>
                             </tr>
                         )}
@@ -130,7 +136,7 @@ export default function CustomTable<T extends Record<string, any>>({
                 </table>
             </div>
 
-            {paginated && totalPages > 1 && (
+            {Number(total) > 10 && (
                 <div className="flex items-center justify-between border-t border-grey-02 px-4 py-3">
                     <Text className="text-sm text-grey-03">
                         {rangeStart} to {rangeEnd} of {itemTotal} results
@@ -167,9 +173,9 @@ export default function CustomTable<T extends Record<string, any>>({
                         <button
                             type="button"
                             className="rounded-lg border border-grey-02 px-3 py-1.5 text-sm text-grey-05 disabled:opacity-40"
-                            disabled={page >= totalPages}
+                            disabled={hasNext}
                             onClick={() =>
-                                onPageChange?.(Math.min(totalPages, page + 1))
+                                onPageChange?.(page + 1)
                             }
                         >
                             Next

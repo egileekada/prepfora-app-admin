@@ -4,16 +4,36 @@ import { handleApiError } from "@/config/handleApiError";
 import httpService from "@/config/httpService";
 import { showSuccess } from "@/config/toast";
 import { URLS } from "@/config/urls";
-import { IWaitlist } from "@/types/waitlist";
+import { IWaitlist, IWaitlistData } from "@/types/waitlist";
 import { useMutation } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { useFormik } from "formik";
 import { useState } from "react";
 import * as Yup from "yup";
+import { useFetchData } from "./useFetchData";
+import { PaginatedResponse } from "@/types/pagination";
 
 const useWaitList = () => {
 
     const [isOpen, setOpen] = useState(false)
+    const [ page, setPage ] = useState(1)
+
+
+    const useGetWaitList = () => {
+        return useFetchData<PaginatedResponse<IWaitlistData>>({
+            endpoint: URLS.WAIT_LIST,
+            name: [URLS.WAIT_LIST],
+            params: {
+                page,
+                limit: 10
+            }
+        });
+    };
+
+    // return {
+    //     useSubscriptionPlan,
+    //     useCurrentPlan,
+    // };
 
     const validationSchema = Yup.object({
         email: Yup.string()
@@ -59,7 +79,10 @@ const useWaitList = () => {
         formik,
         isOpen,
         setOpen,
-        isLoading: waitlist.isPending
+        isLoading: waitlist.isPending,
+        useGetWaitList,
+        page,
+        setPage
     };
 };
 
