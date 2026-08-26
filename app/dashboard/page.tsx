@@ -5,19 +5,19 @@ import { useRouter } from "next/navigation"
 import { useEffect } from "react"
 
 
-export default function HomePage () {
+export default function HomePage() {
 
     const router = useRouter()
 
-    useEffect(()=> {
+    useEffect(() => {
         router.push("/dashboard/home")
     }, [])
 
-    return(
+    return (
         <LoadingLayout loading={true} >
-        <section>
-            Home
-        </section>
+            <section>
+                Home
+            </section>
         </LoadingLayout>
     )
 }

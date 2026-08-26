@@ -34,7 +34,7 @@ export default function Sidebar() {
             name: "FAQ",
             link: "/dashboard/faq",
             icon: Like,
-            disable: true
+            disable: false
         },
         {
             name: "Analytics",
@@ -70,17 +70,17 @@ export default function Sidebar() {
 
     return (
         <div className=" w-fit h-screen ">
-            <div className=" w-[263px] h-screen bg-primary-300 py-10 items-start flex flex-col justify-between px-6 ">
+            <div className=" w-[263px] h-screen bg-primary-300 py-10 items-start flex flex-col px-6 ">
                 <div className=" ">
-                    <Logo color="white" width={193} />
+                    <Logo color="white" width={150} />
                 </div>
-                <div className=" w-full flex-col flex gap-2 ">
+                <div className=" w-full flex-col flex pt-10 gap-2 ">
                     {sidebar_link?.map((item, index) => {
                         return (
                             <button
                                 key={index}
                                 disabled={item?.disable}
-                                onClick={()=> push(item.link)}
+                                onClick={() => push(item.link)}
                                 className={` ${pathname === item?.link ? " bg-primary-550 " : ""} cursor-pointer  px-3 gap-4 flex items-center text-white w-full h-[50px] rounded-lg `}
                             >
                                 <item.icon size={24} />
@@ -91,7 +91,7 @@ export default function Sidebar() {
                         );
                     })}
                 </div>
-                <div className=" p-4 w-full rounded-2xl bg-primary-350 flex items-center gap-4 text-white ">
+                <div className=" p-4 w-full rounded-2xl bg-primary-350 flex items-center gap-4 mt-auto text-white ">
                     <div className=" border border-white rounded-full w-10 h-10 bg-white "></div>
                     <div>
                         <CustomText type="body-lg">Jane Doe</CustomText>

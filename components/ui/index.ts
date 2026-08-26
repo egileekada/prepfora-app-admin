@@ -12,3 +12,4 @@ export { default as CustomCheckboxGroup } from "./customCheckboxGroup";
 export { default as CustomImage } from "./customImage";
 export { default as CustomTable } from "./customTable";
 export type { Column, ColumnType, CustomTableProps } from "@/types/table";
+export { default as FormikRichTextEditor } from "./formikRichTextEditor";

@@ -1,5 +1,11 @@
 
 export interface IWaitlist {
+    emails: string[];
+    subject: string;
+    message: string;
+}
+
+export interface IJoinWaitlist {
     email: string;
     first_name: string;
     last_name: string;

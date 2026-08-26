@@ -4,7 +4,7 @@ import { handleApiError } from "@/config/handleApiError";
 import httpService from "@/config/httpService";
 import { showSuccess } from "@/config/toast";
 import { URLS } from "@/config/urls";
-import { IWaitlist } from "@/types/waitlist";
+import { IJoinWaitlist } from "@/types/waitlist";
 import { useMutation } from "@tanstack/react-query";
 import { AxiosError } from "axios";
 import { useFormik } from "formik";
@@ -32,7 +32,7 @@ const useAuth = () => {
     });
     
     const waitlist = useMutation({
-        mutationFn: (data: IWaitlist) =>
+        mutationFn: (data: IJoinWaitlist) =>
             httpService.post(URLS.WAIT_LIST, data),
         onError: (error: AxiosError<ApiErrorResponse>) => handleApiError(error),
         onSuccess: (data) => {
