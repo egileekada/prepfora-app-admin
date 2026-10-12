@@ -24,11 +24,17 @@ export default function Sidebar() {
             icon: Element4,
             disable: false
         },
+        // {
+        //     name: "Question Library",
+        //     link: "/dashboard/question",
+        //     icon: Element4,
+        //     disable: false
+        // },
         {
             name: "Students",
             link: "/dashboard/student",
             icon: Book,
-            disable: true
+            disable: false
         },
         {
             name: "FAQ",
@@ -40,7 +46,7 @@ export default function Sidebar() {
             name: "Analytics",
             link: "/dashboard/analytics",
             icon: ChartSquare,
-            disable: true
+            disable: false
         },
         {
             name: "Waitlist",
@@ -52,7 +58,7 @@ export default function Sidebar() {
             name: "Contact",
             link: "/dashboard/contact",
             icon: Sms,
-            disable: true
+            disable: false
         },
         {
             name: "Terms",
