@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import Image from "next/image";
 import {
     SearchNormal1,
@@ -13,6 +13,7 @@ import {
 } from "iconsax-reactjs";
 import { CustomText } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import { useAnalyticsDashboard } from "@/hooks/useAnalytics";
 
 interface Student {
     id: string;
@@ -31,20 +32,6 @@ interface Student {
     avatar: string;
 }
 
-const summaryCards = [
-    {
-        title: "Total Students",
-        number: "45,200",
-    },
-    {
-        title: "Active Students",
-        number: "12,850",
-    },
-    {
-        title: "New (Last 30 Days)",
-        number: "245",
-    },
-];
 
 const mockStudents: Student[] = [
     {
@@ -187,6 +174,23 @@ function RosetteBadgeIcon({ muted = false }: { muted?: boolean }) {
 }
 
 export default function StudentPage() {
+    const { data: analytics } = useAnalyticsDashboard();
+
+    const summaryCards = useMemo(() => [
+        {
+            title: "Total Students",
+            number: analytics ? analytics.total_students.toLocaleString() : "45,200",
+        },
+        {
+            title: "Active Students",
+            number: analytics ? analytics.active_students.daily_active.toLocaleString() : "12,850",
+        },
+        {
+            title: "New (Last 30 Days)",
+            number: analytics ? analytics.new_signups.this_month.toLocaleString() : "245",
+        },
+    ], [analytics]);
+
     const [students, setStudents] = useState<Student[]>(mockStudents);
     const [searchQuery, setSearchQuery] = useState("");
     const [selectedExam, setSelectedExam] = useState("All Exams");
@@ -195,6 +199,7 @@ export default function StudentPage() {
     const [isPlanDropdownOpen, setIsPlanDropdownOpen] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [selectedStudent, setSelectedStudent] = useState<Student | null>(null);
+
 
     const examOptions = ["All Exams", "JAMB", "WAEC", "NECO"];
     const planOptions = ["All Users", "Paid Users", "Free Plan"];
