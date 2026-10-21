@@ -23,19 +23,19 @@ export const Logo: React.FC<IconSvgProps> = ({ size, width, color, ...props }) =
     >
         <path
             fillRule="evenodd"
-            clip-rule="evenodd"
+            clipRule="evenodd"
             d="M22.0763 0C21.1926 11.555 12.0562 21.9557 0 21.5023V0H22.0763Z"
             fill={color ?? "#2563EB"}
         />
         <path
             fillRule="evenodd"
-            clip-rule="evenodd"
+            clipRule="evenodd"
             d="M0 21.4986C0.883677 33.0536 9.72734 44.002 22.0763 43.001V21.4986H0Z"
             fill={color ?? "#F59E0B"}
         />
         <path
             fillRule="evenodd"
-            clip-rule="evenodd"
+            clipRule="evenodd"
             d="M44.1524 0C43.2688 11.555 34.1324 21.9557 22.0762 21.5023V0H44.1524Z"
             fill={color ?? "#10B981"}
         />

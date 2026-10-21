@@ -5,91 +5,125 @@ import axios, {
   InternalAxiosRequestConfig,
 } from "axios";
 
-const BASE_URL = "https://prepforabackend-production.up.railway.app"
+const BASE_URL = "https://prepforabackend-production.up.railway.app";
+
+const ACCESS_TOKEN_KEY = "prepfora_admin_access_token";
+const REFRESH_TOKEN_KEY = "prepfora_admin_refresh_token";
+const ADMIN_USER_KEY = "prepfora_admin_user";
 
 // ─── Token Storage ────────────────────────────────────────────────────────────
-// Prefer memory for access token (XSS-safe); only refresh token goes to httpOnly
-// cookie (handled server-side). If you can't use httpOnly cookies, use
-// localStorage ONLY for the refresh token — never for the access token.
-
 let inMemoryAccessToken: string | null = null;
 
 export const tokenStorage = {
-  getAccess: () => inMemoryAccessToken,
+  getAccess: (): string | null => {
+    if (inMemoryAccessToken) return inMemoryAccessToken;
+    if (typeof window !== "undefined") {
+      const stored = localStorage.getItem(ACCESS_TOKEN_KEY);
+      if (stored) {
+        inMemoryAccessToken = stored;
+        return stored;
+      }
+    }
+    return null;
+  },
   setAccess: (token: string) => {
     inMemoryAccessToken = token;
+    if (typeof window !== "undefined") {
+      localStorage.setItem(ACCESS_TOKEN_KEY, token);
+    }
   },
   clearAccess: () => {
     inMemoryAccessToken = null;
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(ACCESS_TOKEN_KEY);
+    }
   },
 
-  // Refresh token in localStorage only if httpOnly cookie isn't an option
-  getRefresh: () => localStorage.getItem("hiroek_refresh_token"),
-  setRefresh: (token: string) => localStorage.setItem("hiroek_refresh_token", token),
-  clearRefresh: () => localStorage.removeItem("hiroek_refresh_token"),
+  getRefresh: (): string | null => {
+    if (typeof window !== "undefined") {
+      return localStorage.getItem(REFRESH_TOKEN_KEY);
+    }
+    return null;
+  },
+  setRefresh: (token: string) => {
+    if (typeof window !== "undefined") {
+      localStorage.setItem(REFRESH_TOKEN_KEY, token);
+    }
+  },
+  clearRefresh: () => {
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(REFRESH_TOKEN_KEY);
+    }
+  },
 
   clearAll: () => {
     inMemoryAccessToken = null;
-    localStorage.removeItem("hiroek_refresh_token");
+    if (typeof window !== "undefined") {
+      localStorage.removeItem(ACCESS_TOKEN_KEY);
+      localStorage.removeItem(REFRESH_TOKEN_KEY);
+      localStorage.removeItem(ADMIN_USER_KEY);
+    }
   },
 };
 
 /** Clears tokens and client session keys. Safe to call from UI or interceptors. */
 export function clearSession() {
   tokenStorage.clearAll();
-  if (typeof window === "undefined") return;
-  localStorage.removeItem("hiroekuserid");
-  localStorage.removeItem("hiroekuserrole");
 }
 
 // ─── Axios Instances ──────────────────────────────────────────────────────────
 
 export const httpService = axios.create({
   baseURL: BASE_URL,
-  timeout: 10_000,
+  timeout: 15_000,
 });
 
 export const unsecureHttpService = axios.create({
   baseURL: BASE_URL,
-  timeout: 10_000,
+  timeout: 15_000,
 });
 
 // ─── Refresh Token Logic ──────────────────────────────────────────────────────
 
 let isRefreshing = false;
 
-// Queue of { resolve, reject } for requests that arrived during a refresh
 type PromiseExecutor = {
   resolve: (token: string) => void;
   reject: (err: unknown) => void;
 };
 let failedQueue: PromiseExecutor[] = [];
 
-/**
- * Drain the queue: resolve every waiting request with the new token,
- * or reject them all if the refresh itself failed.
- */
-// function processQueue(error: unknown, token: string | null = null) {
-//   failedQueue.forEach(({ resolve, reject }) => {
-//     if (error) reject(error);
-//     else resolve(token as string);
-//   });
-//   failedQueue = [];
-// }
+function processQueue(error: unknown, token: string | null = null) {
+  failedQueue.forEach(({ resolve, reject }) => {
+    if (error) reject(error);
+    else resolve(token as string);
+  });
+  failedQueue = [];
+}
 
-// async function refreshAccessToken(): Promise<string> {
-//   const refreshToken = tokenStorage.getRefresh();
-//   if (!refreshToken) throw new Error("No refresh token available");
+async function refreshAccessToken(): Promise<string> {
+  const refreshToken = tokenStorage.getRefresh();
+  if (!refreshToken) throw new Error("No refresh token available");
 
-//   // Use the unsecure instance so this call never triggers another refresh loop
-//   const { data } = await unsecureHttpService.post<{
-//     access: string;
-//     refreshToken: string;
-//   }>("/token/refresh", { refresh: refreshToken }); 
-//   tokenStorage.setAccess(data.access);
-//   // tokenStorage.setRefresh(data.refreshToken); // rotate refresh token
-//   return data.access;
-// }
+  const response = await unsecureHttpService.post<{
+    success: boolean;
+    data?: {
+      access_token: string;
+      refresh_token?: string;
+    };
+  }>("/admin/auth/refresh-token", { refresh_token: refreshToken });
+
+  const data = response.data?.data;
+  if (!data?.access_token) {
+    throw new Error("Failed to refresh access token");
+  }
+
+  tokenStorage.setAccess(data.access_token);
+  if (data.refresh_token) {
+    tokenStorage.setRefresh(data.refresh_token);
+  }
+  return data.access_token;
+}
 
 // ─── Unsecured Instance Interceptors ─────────────────────────────────────────
 
@@ -102,8 +136,7 @@ unsecureHttpService.interceptors.response.use(
 
 httpService.interceptors.request.use(
   (config: InternalAxiosRequestConfig): InternalAxiosRequestConfig => {
-    const token = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJfaWQiOiI2OGY2YWJjNTZhNTkyMTZjYTBkMzUwZjIiLCJ1c2VySWQiOiI2OGY2YWJjNDZhNTkyMTZjYTBkMzUwZjAiLCJyb2xlIjoiZXZlbnRfcGFydG5lciIsIm5hbWUiOiJWaWJleiBOYXRpb25zIiwiZXhwIjoxNzg1NTI0MjUyLjkxMywiaWF0IjoxNzg1NTEzNDUyfQ.JyxaZkfj7gOcxpYg6Fzq5DYbOJVSvP--e9Gffy6iu-s"
-    // tokenStorage.getAccess();
+    const token = tokenStorage.getAccess();
     if (token) {
       config.headers.set("Authorization", `Bearer ${token}`);
     }
@@ -122,12 +155,10 @@ httpService.interceptors.response.use(
       _retry?: boolean;
     };
 
-    // Only attempt refresh on 401 and only once per request
-    if (error.response?.status !== 401 || originalRequest._retry) {
+    if (error.response?.status !== 401 || originalRequest?._retry) {
       return Promise.reject(error);
     }
 
-    // ── If a refresh is already in-flight, queue this request ──────────────
     if (isRefreshing) {
       return new Promise<AxiosResponse>((resolve, reject) => {
         failedQueue.push({
@@ -140,30 +171,25 @@ httpService.interceptors.response.use(
       });
     }
 
-    if (typeof window !== "undefined") {
-      window.location.href = "/auth";
-    }
-    // ── This is the first 401 — kick off the refresh ────────────────────────
     originalRequest._retry = true;
     isRefreshing = true;
 
-    // try {
-    //   const newToken = await refreshAccessToken();
-    //   processQueue(null, newToken);
-    //   originalRequest.headers.set("Authorization", `Bearer ${newToken}`);
-    //   return httpService(originalRequest); // retry the original request
-    // } catch (refreshError) {
-    //   processQueue(refreshError, null);
-    //   clearSession();
+    try {
+      const newToken = await refreshAccessToken();
+      processQueue(null, newToken);
+      originalRequest.headers.set("Authorization", `Bearer ${newToken}`);
+      return httpService(originalRequest);
+    } catch (refreshError) {
+      processQueue(refreshError, null);
+      clearSession();
 
-    //   // Redirect to login — works in both App Router and Pages Router
-    //   if (typeof window !== "undefined") {
-    //     window.location.href = "/auth";
-    //   }
-    //   return Promise.reject(refreshError);
-    // } finally {
-    //   isRefreshing = false;
-    // }
+      if (typeof window !== "undefined") {
+        window.location.href = "/";
+      }
+      return Promise.reject(refreshError);
+    } finally {
+      isRefreshing = false;
+    }
   }
 );
 
