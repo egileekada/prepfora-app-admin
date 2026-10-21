@@ -1,27 +1,34 @@
 "use client";
+import { useMemo } from "react";
 import { LoadingLayout, ModalLayout } from "@/components/layouts";
 import { Column, CustomButton, CustomTable, CustomText, FormikField, FormikRichTextEditor } from "@/components/ui";
 import { dateFormat } from "@/config/dateFormat";
 import useWaitList from "@/hooks/useWaitList";
+import { useAnalyticsDashboard } from "@/hooks/useAnalytics";
 import { IWaitlistData } from "@/types/waitlist";
 import { Checkbox } from "@heroui/react";
 import { FormikProvider } from "formik";
 
-
-const summaryCards = [
-    {
-        title: "Total Students on Waitlist",
-        number: "5,200",
-    },
-    {
-        title: "Joined Today",
-        number: "50",
-    },
-];
-
 export default function WaitListPage() {
-
+    const { data: analytics } = useAnalyticsDashboard();
     const { useGetWaitList, page, setPage, formik, isLoading: isLoadingInviteUser, setOpen, isOpen } = useWaitList();
+    const { data: waitList, isLoading } = useGetWaitList();
+
+    const summaryCards = useMemo(() => [
+        {
+            title: "Total Students on Waitlist",
+            number: waitList?.pagination?.total
+                ? waitList.pagination.total.toLocaleString()
+                : (analytics?.total_students ? analytics.total_students.toLocaleString() : "5,200"),
+        },
+        {
+            title: "Joined Today",
+            number: analytics?.new_signups?.today !== undefined
+                ? analytics.new_signups.today.toLocaleString()
+                : "50",
+        },
+    ], [waitList?.pagination?.total, analytics]);
+
 
     const columns: Column<IWaitlistData>[] = [
         {
@@ -89,10 +96,9 @@ export default function WaitListPage() {
             },
         },
     ];
-    const { data: waitList, isLoading } = useGetWaitList();
-
 
     return (
+
         <FormikProvider value={formik} >
             <section className=" w-full flex flex-col gap-8 ">
                 <CustomText type="headline-sm">Waitlist Management</CustomText>

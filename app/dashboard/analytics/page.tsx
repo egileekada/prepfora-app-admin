@@ -1,9 +1,10 @@
 "use client";
 
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { ArrowDown2, ArrowLeft2, ArrowRight2 } from "iconsax-reactjs";
 import { CustomText } from "@/components/ui";
 import { cn } from "@/lib/utils";
+import { useAnalyticsDashboard } from "@/hooks/useAnalytics";
 
 interface ChartDay {
     day: string;
@@ -19,7 +20,7 @@ interface SubjectPerformance {
     status: "attention" | "strong" | "stable";
 }
 
-const chartData: ChartDay[] = [
+const defaultChartData: ChartDay[] = [
     {
         day: "SUN",
         newUsers: 400,
@@ -123,6 +124,8 @@ const subjectsData: SubjectPerformance[] = [
 ];
 
 export default function AnalyticsPage() {
+    const { data: analytics, isLoading } = useAnalyticsDashboard();
+
     const [selectedPeriod, setSelectedPeriod] = useState("7 days");
     const [isPeriodOpen, setIsPeriodOpen] = useState(false);
 
@@ -132,7 +135,7 @@ export default function AnalyticsPage() {
     const [selectedSubjectExam, setSelectedSubjectExam] = useState("WAEC");
     const [isSubjectExamOpen, setIsSubjectExamOpen] = useState(false);
 
-    const [activeDayIndex, setActiveDayIndex] = useState<number>(0); // SUN selected by default to match tooltip
+    const [activeDayIndex, setActiveDayIndex] = useState<number>(0);
     const [subjectPageIndex, setSubjectPageIndex] = useState(0);
 
     const periodOptions = ["7 days", "14 days", "30 days", "3 months"];
@@ -142,6 +145,40 @@ export default function AnalyticsPage() {
         subjectPageIndex * 4,
         subjectPageIndex * 4 + 4
     );
+
+    const chartData = useMemo<ChartDay[]>(() => {
+        if (analytics?.recent_trends_7d && analytics.recent_trends_7d.length > 0) {
+            const trends = analytics.recent_trends_7d;
+            const maxVal = Math.max(
+                ...trends.map((t) => (t.exams_taken || 0) + (t.signups || 0)),
+                1
+            );
+            const maxScale = 75;
+
+            return trends.map((item) => {
+                const dateObj = new Date(item.date);
+                const dayLabel = !isNaN(dateObj.getTime())
+                    ? dateObj.toLocaleDateString("en-US", { weekday: "short" }).toUpperCase()
+                    : item.date;
+
+                const newUsers = item.signups || 0;
+                const activeUsers = item.exams_taken || 0;
+
+                const newHeight = maxVal > 0 ? Math.max((newUsers / maxVal) * maxScale, 4) : 4;
+                const activeHeight = maxVal > 0 ? Math.max((activeUsers / maxVal) * maxScale, 4) : 4;
+
+                return {
+                    day: dayLabel,
+                    newUsers,
+                    activeUsers,
+                    newHeight,
+                    activeHeight,
+                };
+            });
+        }
+        return defaultChartData;
+    }, [analytics?.recent_trends_7d]);
+
 
     return (
         <section className="w-full flex flex-col gap-8 pb-12">
@@ -435,37 +472,46 @@ export default function AnalyticsPage() {
                         <div className="w-full bg-white rounded-2xl p-6 shadow-[0_1px_3px_rgba(0,0,0,0.02)] flex flex-col gap-6">
                             {/* 2 Stat Cards */}
                             <div className="w-full grid grid-cols-2 gap-4">
-                                {/* PrepPoints Used */}
+                                {/* PrepPoints Used / Awarded */}
                                 <div className="bg-[#eaeffa] rounded-2xl p-4 sm:p-5 flex flex-col justify-between min-h-[96px]">
                                     <CustomText
                                         type="body-sm"
                                         className="text-neutral-400 text-xs font-medium"
                                     >
-                                        PrepPoints Used
+                                        PrepPoints Awarded
                                     </CustomText>
                                     <CustomText
                                         type="headline-lg"
                                         className="font-bold text-neutral-500 text-2xl tracking-tight mt-2"
                                     >
-                                        2.2M
+                                        {analytics?.activity_metrics
+                                            ? analytics.activity_metrics.total_prep_points_awarded >= 1_000_000
+                                                ? `${(analytics.activity_metrics.total_prep_points_awarded / 1_000_000).toFixed(1)}M`
+                                                : analytics.activity_metrics.total_prep_points_awarded >= 1_000
+                                                  ? `${(analytics.activity_metrics.total_prep_points_awarded / 1_000).toFixed(0)}k`
+                                                  : analytics.activity_metrics.total_prep_points_awarded.toLocaleString()
+                                            : "2.2M"}
                                     </CustomText>
                                 </div>
 
-                                {/* Credits Redeemed */}
+                                {/* Badges Earned */}
                                 <div className="bg-[#eafaf5] rounded-2xl p-4 sm:p-5 flex flex-col justify-between min-h-[96px]">
                                     <CustomText
                                         type="body-sm"
                                         className="text-neutral-400 text-xs font-medium"
                                     >
-                                        Credits Redeemed
+                                        Badges Earned
                                     </CustomText>
                                     <CustomText
                                         type="headline-lg"
                                         className="font-bold text-neutral-500 text-2xl tracking-tight mt-2"
                                     >
-                                        500k
+                                        {analytics?.activity_metrics
+                                            ? analytics.activity_metrics.total_badges_earned.toLocaleString()
+                                            : "500k"}
                                     </CustomText>
                                 </div>
+
                             </div>
 
                             {/* Trending Badges */}

@@ -59,7 +59,7 @@ export default function FAQPage() {
             },
         },
         {
-            id: "updated_at",
+            id: "action",
             name: "ACTION",
             render: (_value, row) => {
                 return (

@@ -63,4 +63,6 @@ const useAuth = () => {
     };
 };
 
+export * from "./useAdminAuth";
 export default useAuth;
+
